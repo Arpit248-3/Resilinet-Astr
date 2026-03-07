@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import axios from 'axios';
-import { API_URL } from '../../App';
+import io from 'socket.io-client';
+import { API_URL, SOCKET_URL } from '../config/api';
 
 export default function OperationsMapScreen({ responderId, setActiveMissionId, navigate }) {
   const [alerts, setAlerts] = useState([]);
@@ -20,7 +21,50 @@ export default function OperationsMapScreen({ responderId, setActiveMissionId, n
   useEffect(() => {
     fetchMapData();
     const interval = setInterval(fetchMapData, 5000); // Poll every 5 seconds
-    return () => clearInterval(interval);
+
+    // E2E Compliance: Immediately listen for SOS dispatches
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket'],
+      reconnection: true
+    });
+    socket.on('newSOS', (sos) => {
+        console.log('[Rescuer] New SOS received via socket:', sos._id);
+        setAlerts(prev => {
+            // Prevent duplication if poll also catches it
+            if (!prev.find(a => a._id === sos._id) && sos.status !== 'Resolved') {
+                return [sos, ...prev];
+            }
+            return prev;
+        });
+    });
+    socket.on('new-sos', (sos) => {
+        console.log('[Rescuer] new-sos event received:', sos._id);
+        setAlerts(prev => {
+            if (!prev.find(a => a._id === sos._id) && sos.status !== 'Resolved') {
+                return [sos, ...prev];
+            }
+            return prev;
+        });
+    });
+    
+    // UBER-STYLE DISPATCH ALERTS
+    socket.on('rescueAssigned', (data) => {
+        if (data.responderId === responderId) {
+            Alert.alert(
+                "🚨 NEW RESCUE MISSION",
+                `${data.priority || 'URGENT'} - ${data.emergencyType || 'Emergency'} Incident.\n\nDo you accept this assignment?`,
+                [
+                    { text: "DECLINE", style: "cancel" },
+                    { text: "ACCEPT MISSION", onPress: () => acceptMission(data.sosId) }
+                ]
+            );
+        }
+    });
+
+    return () => {
+      clearInterval(interval);
+      socket.disconnect();
+    };
   }, []);
 
   const fetchMapData = async () => {

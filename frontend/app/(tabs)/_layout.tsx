@@ -25,6 +25,7 @@ export default function TabLayout() {
       <Tabs.Screen name="nearby-rescuers" options={{ title: 'NEARBY', tabBarIcon: ({ color }) => <Ionicons name="people-outline" size={24} color={color} /> }} />
       <Tabs.Screen name="guide" options={{ title: 'GUIDE', tabBarIcon: ({ color }) => <Ionicons name="book-outline" size={24} color={color} /> }} />
       <Tabs.Screen name="settings" options={{ title: 'SETTINGS', tabBarIcon: ({ color }) => <Ionicons name="settings-outline" size={24} color={color} /> }} />
+      <Tabs.Screen name="scanner" options={{ href: null, title: 'SCAN RESCUER' }} />
     </Tabs>
   );
 }

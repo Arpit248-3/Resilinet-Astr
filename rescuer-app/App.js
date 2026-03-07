@@ -5,14 +5,16 @@ import OperationsMapScreen from './src/screens/OperationsMapScreen';
 import ActiveMissionScreen from './src/screens/ActiveMissionScreen';
 import StatusDashboardScreen from './src/screens/StatusDashboardScreen';
 import QRScannerScreen from './src/screens/QRScannerScreen';
+import QRGeneratorScreen from './src/screens/QRGeneratorScreen';
 import SupplyDeliveryScreen from './src/screens/SupplyDeliveryScreen';
 import * as Location from 'expo-location';
 import * as Battery from 'expo-battery';
 import axios from 'axios';
 
-// Replace with your Computer's Local IPv4 Address if testing on a physical device.
-// 10.0.2.2 works for testing on an Android Emulator.
-export const API_URL = 'http://192.168.145.236:5000/api';
+// Centralized API configuration — uses EXPO_PUBLIC_API_URL env var
+// Set your PC's LAN IP in rescuer-app/.env
+import { API_URL, SOCKET_URL } from './src/config/api';
+export { API_URL, SOCKET_URL };
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('Login');
@@ -32,14 +34,15 @@ export default function App() {
           let batteryLevel = await Battery.getBatteryLevelAsync();
           if (batteryLevel === -1) batteryLevel = 1; // Fallback to 100% if emulator
           
-          await axios.patch(`${API_URL}/responders/${responderId}/location`, {
+          await axios.post(`${API_URL}/location/update`, {
+            userId: responderId,
             latitude: location.coords.latitude,
             longitude: location.coords.longitude,
-            batteryLevel: Math.round(batteryLevel * 100),
-            timestamp: new Date().toISOString()
+            type: 'rescuer',
+            batteryLevel: Math.round(batteryLevel * 100)
           });
         } catch (e) { console.log('Telemetry sync failed', e.message); }
-      }, 180000); // 3 minutes
+      }, 15000); // 15 seconds loop for e2e integration
     }
     return () => clearInterval(interval);
   }, [responderId]);
@@ -58,6 +61,8 @@ export default function App() {
         return <SupplyDeliveryScreen responderId={responderId} navigate={setCurrentScreen} />;
       case 'Scanner':
         return <QRScannerScreen responderId={responderId} missionId={activeMissionId} navigate={setCurrentScreen} />;
+      case 'Generator':
+        return <QRGeneratorScreen responderId={responderId} missionId={activeMissionId} navigate={setCurrentScreen} />;
       default:
         return <LoginScreen setResponderId={setResponderId} navigate={setCurrentScreen} />;
     }

@@ -6,12 +6,14 @@ import { io } from 'socket.io-client';
 import QRCode from 'react-native-qrcode-svg';
 import CryptoJS from 'crypto-js';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { API_URL, SOCKET_URL, SECRET_KEY } from '@/constants/api';
 
 export default function RescueStatusScreen() {
   const [statusObj, setStatusObj] = useState(null);
   const [survivorIdentity, setSurvivorIdentity] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const router = useRouter();
 
   const fetchData = async () => {
     try {
@@ -90,6 +92,13 @@ export default function RescueStatusScreen() {
         )}
       </View>
 
+      {statusObj?.status && ["Responder Assigned", "Responder En Route", "rescue_assigned"].includes(statusObj.status) && (
+        <TouchableOpacity style={styles.scanRescuerBtn} onPress={() => router.push('/scanner')}>
+          <Ionicons name="qr-code-outline" size={20} color="#000" />
+          <Text style={styles.scanRescuerText}>SCAN RESCUER IDENTIFICATION</Text>
+        </TouchableOpacity>
+      )}
+
       {statusObj?.status && statusObj.status !== 'No Active SOS' && statusObj.status !== 'Resolved' && (
         <View style={styles.qrCard}>
           <Text style={styles.cardTitle}>SECURE HANDSHAKE (QR)</Text>
@@ -140,5 +149,7 @@ const styles = StyleSheet.create({
   qrBox: { alignItems: 'center', marginVertical: 10 },
   identityCard: { backgroundColor: '#0f1115', borderRadius: 10, padding: 20, borderWidth: 1, borderColor: '#333', marginBottom: 40 },
   idLabel: { color: '#666', fontSize: 10, fontWeight: 'bold', letterSpacing: 1 },
-  idValue: { color: '#fff', fontSize: 14, fontWeight: '900', letterSpacing: 2, marginTop: 4, fontFamily: 'monospace' }
+  idValue: { color: '#fff', fontSize: 14, fontWeight: '900', letterSpacing: 2, marginTop: 4, fontFamily: 'monospace' },
+  scanRescuerBtn: { backgroundColor: '#00f2ff', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 18, borderRadius: 10, marginBottom: 20, gap: 10 },
+  scanRescuerText: { color: '#000', fontWeight: '900', letterSpacing: 1, fontSize: 12 }
 });

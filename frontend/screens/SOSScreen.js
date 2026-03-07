@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Linking, Platform, StyleSheet, ScrollView, Alert } from 'react-native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import { API_URL } from '@/constants/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SOS_TARGET_NUMBER = "6260055671";
-const BACKEND_IP = "127.0.0.1"; // Your specific Network IP
 
 const SOS_OPTIONS = [
   { id: 'medical', label: 'MEDICAL', icon: 'medkit', color: '#ff4d4d' },
@@ -73,20 +74,21 @@ export default function SOSScreen() {
 
     // 2. Alert Backend for PDF generation and Web Feed
     try {
-      await fetch(`http://${BACKEND_IP}:5000/api/sos`, {
+      const survivorId = await AsyncStorage.getItem('survivorId') || SOS_TARGET_NUMBER;
+      const survivorName = await AsyncStorage.getItem('survivorName') || "Unknown Citizen";
+
+      await fetch(`${API_URL}/sos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: "Arpit", // Username
-          phone: SOS_TARGET_NUMBER,
+          survivorId: survivorId,
+          name: survivorName, 
+          phone: survivorId,
           category: type,
           priority: priority,
           ai_insight: `User signaled ${type} emergency via mobile app.`,
-          location: { 
-            latitude: lat, 
-            longitude: lon, 
-            address: address 
-          }
+          latitude: lat,
+          longitude: lon
         })
       });
     } catch (error) {

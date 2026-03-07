@@ -5,6 +5,10 @@ const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const axios = require('axios');
+const multer = require('multer');
+
+// Configure multer for handling file uploads (audio recordings from SOSComponent)
+const upload = multer({ dest: 'uploads/' });
 
 // --- UTILS & MODELS ---
 const { calculatePriority } = require('./utils/priorityEngine');
@@ -66,27 +70,107 @@ app.post('/api/survivor/login', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 2. Submit New SOS
-app.post('/api/sos', async (req, res) => {
+// 2. Submit New SOS or Update Existing Active SOS
+// Supports both JSON (from purely text-based SOS) and multipart/form-data (from hardware button SOS with audio)
+app.post('/api/sos', upload.single('audio'), async (req, res) => {
     try {
-        const { phone, latitude, longitude, category, name, email, heartRate, sector } = req.body;
+        console.log("SOS received - Body:", JSON.stringify(req.body));
+        if (req.file) console.log("SOS received - Audio File Attached:", req.file.originalname);
+        console.log("SOS received from:", req.ip);
+        const { survivorId, phone, latitude, longitude, category, emergencyType, name, email, heartRate, sector, timestamp, message } = req.body;
         
+        const priorityCategory = emergencyType || category || 'General';
+        const searchId = survivorId || phone || "Unknown";
+        
+        // --- NLP PRIORITY CLASSIFICATION ---
+        let priority = "Medium";
+        const msgLower = (message || "").toLowerCase();
+        if (heartRate > 120 || msgLower.includes("child") || msgLower.includes("unconscious") || msgLower.includes("bleeding") || msgLower.includes("heart patient")) {
+            priority = "Critical";
+        } else if (msgLower.includes("trapped") || msgLower.includes("fire") || msgLower.includes("urgent")) {
+            priority = "High";
+        }
+        
+        // --- LOCATION HANDLING ---
+        const coords = [parseFloat(longitude) || 0, parseFloat(latitude) || 0];
+
+        // Find existing SOS that isn't resolved
+        let existingSOS = await SOS.findOne({ survivorId: searchId, status: { $ne: 'Resolved' } });
+
+        if (existingSOS) {
+            existingSOS.location = { type: 'Point', coordinates: coords };
+            existingSOS.timestamp = timestamp ? new Date(timestamp) : new Date();
+            existingSOS.priority = priority; // Updates priority dynamically based on latest message
+            if (heartRate) {
+                 existingSOS.heartRate = heartRate;
+            }
+            await existingSOS.save();
+            console.log("SOS updated and saved to DB:", existingSOS._id);
+            io.emit('statusUpdate', existingSOS); // Emit location / status refresh
+            console.log("SOS update broadcasted via socket:", existingSOS._id);
+            return res.status(200).json({ success: true, data: existingSOS, updated: true });
+        }
+
+        // --- AUTOMATIC NEAREST RESCUER ASSIGNMENT ---
+        let nearestResponder = null;
+        try {
+            nearestResponder = await Responder.findOne({
+                status: 'Available',
+                location: {
+                    $near: {
+                        $geometry: { type: "Point", coordinates: coords },
+                        $maxDistance: 5000 // 5km radius
+                    }
+                }
+            });
+        } catch (geoErr) {
+            console.log("Geospatial query skipped (no index or no responders):", geoErr.message);
+        }
+
+        let initStatus = 'Active';
+        let assignedId = null;
+
+        if (nearestResponder) {
+            initStatus = 'rescue_assigned';
+            assignedId = nearestResponder._id;
+            await Responder.findByIdAndUpdate(assignedId, { status: 'Busy' });
+            console.log(`Auto-assigned nearest rescuer ${assignedId} to new SOS`);
+        }
+
+        // If no active SOS, create brand new
         const newSOS = new SOS({
+            survivorId: searchId,
             name: name || "Unknown Citizen",
             email: email || "N/A",
-            phone,
-            category: (category || 'General').toUpperCase(),
+            phone: phone || searchId,
+            category: priorityCategory.toUpperCase(),
+            message: message || priorityCategory,
+            priority: priority,
             heartRate: heartRate || 80,
-            location: { type: 'Point', coordinates: [parseFloat(longitude), parseFloat(latitude)] },
-            status: 'Active',
+            location: { type: 'Point', coordinates: coords },
+            status: initStatus,
+            assignedResponder: assignedId,
             sector: sector || 'Local',
-            timestamp: new Date()
+            timestamp: timestamp ? new Date(timestamp) : new Date()
         });
 
-        newSOS.priority = (newSOS.heartRate > 120) ? "Critical" : "High";
-
         await newSOS.save();
+        console.log("New SOS saved to DB:", newSOS._id, "| Category:", newSOS.category, "| Priority:", newSOS.priority);
         io.emit('new-sos', newSOS); 
+        io.emit('newSOS', newSOS); // Support for Rescuer request
+        
+        // Emit Rescue Assigned Event specifically for the Uber-style flow
+        if (assignedId) {
+            io.emit('rescueAssigned', { 
+                sosId: newSOS._id, 
+                responderId: assignedId,
+                survivorLocation: newSOS.location,
+                emergencyType: newSOS.category,
+                priority: newSOS.priority
+            });
+        }
+        
+        console.log("New SOS broadcasted via socket to all clients:", newSOS._id);
         res.status(201).json({ success: true, data: newSOS });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -127,6 +211,32 @@ app.put('/api/sos/dispatch/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// 4b. Get SOS Status for Survivor App
+app.get('/api/sos/status/:survivorId', async (req, res) => {
+    try {
+        const sos = await SOS.findOne({ survivorId: req.params.survivorId, status: { $ne: 'Resolved' } }).sort({ timestamp: -1 });
+        if (!sos) return res.json({ status: 'No Active SOS', sos: null });
+
+        let statusLabel = 'SOS Sent';
+        if (sos.status === 'Resolved') statusLabel = 'Aid Delivered';
+        else if (sos.status === 'Dispatched' || sos.status === 'rescue_assigned') statusLabel = 'Responder En Route';
+        else if (sos.assignedResponder) statusLabel = 'Rescuer Assigned';
+
+        res.json({ status: statusLabel, sos });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 4c. Get Assigned Responder for Survivor App
+app.get('/api/sos/assigned/:survivorId', async (req, res) => {
+    try {
+        const sos = await SOS.findOne({ survivorId: req.params.survivorId, status: { $ne: 'Resolved' } }).sort({ timestamp: -1 });
+        if (!sos || !sos.assignedResponder) return res.json(null);
+
+        const responder = await Responder.findById(sos.assignedResponder);
+        res.json(responder);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // 5. Resolve SOS
 app.put('/api/sos/resolve/:id', async (req, res) => {
     try {
@@ -134,10 +244,47 @@ app.put('/api/sos/resolve/:id', async (req, res) => {
         if (sos.assignedResponder) {
             await Responder.findByIdAndUpdate(sos.assignedResponder, { status: 'Available' });
         }
-        await SOS.findByIdAndUpdate(req.params.id, { status: 'Resolved' }, { new: true });
+        const updatedSOS = await SOS.findByIdAndUpdate(req.params.id, { status: 'Resolved' }, { new: true });
         const allResponders = await Responder.find();
         io.emit('units-update', allResponders);
+        io.emit('statusUpdate', updatedSOS); // Add explicit support for Dashboard
         res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 5b. Start Rescue (QR Handshake Support)
+app.post('/api/rescue/start', async (req, res) => {
+    try {
+        const { rescuerId, sosId } = req.body;
+        const updatedSOS = await SOS.findByIdAndUpdate(sosId, { 
+            status: 'rescue_assigned', 
+            assignedResponder: rescuerId 
+        }, { new: true });
+        
+        await Responder.findByIdAndUpdate(rescuerId, { status: 'Busy' });
+        
+        io.emit('statusUpdate', updatedSOS);
+        io.emit('rescueAssigned', { sosId, rescuerId });
+        res.json({ success: true, data: updatedSOS });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 5c. End Rescue (Supply Delivered via App)
+app.post('/api/sos/confirm-delivery', async (req, res) => {
+    try {
+        const { sosId, rescuerId, items } = req.body;
+        const updatedSOS = await SOS.findByIdAndUpdate(sosId, { status: 'Resolved' }, { new: true });
+        
+        await Responder.findByIdAndUpdate(rescuerId, { status: 'Available' });
+        const allResponders = await Responder.find();
+        
+        // Dispatch real-time events for Maps, Dashboards, and Survivor App Notification
+        io.emit('units-update', allResponders);
+        io.emit('statusUpdate', updatedSOS);
+        io.emit('rescue-complete', { sosId, rescuerId });
+        io.emit('supplyDelivered', { sosId, rescuerId, items });
+        
+        res.json({ success: true, data: updatedSOS });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -148,6 +295,145 @@ app.get('/api/responders', async (req, res) => {
         res.json(list);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// 6a. Get Nearby Responders
+app.get('/api/responders/nearby', async (req, res) => {
+    try {
+        const { lat, lng } = req.query;
+        if (!lat || !lng) return res.status(400).json({ error: 'lat and lng required' });
+        
+        const responders = await Responder.find({
+            location: {
+                $near: {
+                    $geometry: { type: "Point", coordinates: [ parseFloat(lng), parseFloat(lat) ] },
+                    $maxDistance: 5000 // 5km radius
+                }
+            }
+        });
+        res.json(responders);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- REALTIME LOCATION TRACKING ---
+app.post('/api/location/update', async (req, res) => {
+    try {
+        const { userId, latitude, longitude, type } = req.body;
+        if (type === 'rescuer') {
+            await Responder.findByIdAndUpdate(userId, {
+                location: { type: 'Point', coordinates: [parseFloat(longitude), parseFloat(latitude)] },
+                lastUpdated: new Date()
+            });
+        } else {
+            await SOS.findOneAndUpdate(
+                { survivorId: userId, status: { $ne: 'Resolved' } },
+                { location: { type: 'Point', coordinates: [parseFloat(longitude), parseFloat(latitude)] } }
+            );
+        }
+        io.emit('locationUpdate', { userId, latitude, longitude, type });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- OFFLINE SMS PARSER ---
+app.post('/api/sms-webhook', async (req, res) => {
+    try {
+        // e.g. "SOS LAT:12.93 LNG:77.61 MSG:TRAPPED"
+        const { text, from } = req.body; 
+        const latMatch = text.match(/LAT:([\d\.-]+)/);
+        const lngMatch = text.match(/LNG:([\d\.-]+)/);
+        const msgMatch = text.match(/MSG:(.*)/);
+
+        if (latMatch && lngMatch) {
+            const latitude = parseFloat(latMatch[1]);
+            const longitude = parseFloat(lngMatch[1]);
+            const message = msgMatch ? msgMatch[1].trim() : "Offline SMS Emergency";
+
+            let priority = "High";
+            const msgLower = message.toLowerCase();
+            if (msgLower.includes("child") || msgLower.includes("bleeding") || msgLower.includes("unconscious")) priority = "Critical";
+
+            const newSOS = new SOS({
+                survivorId: from,
+                phone: from,
+                category: "SMS_ALERT",
+                message: message,
+                priority: priority,
+                location: { type: 'Point', coordinates: [longitude, latitude] },
+                status: 'Active'
+            });
+            await newSOS.save();
+            io.emit('new-sos', newSOS);
+            return res.json({ success: true, newSOS });
+        }
+        res.status(400).json({ error: "Invalid SMS format" });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- TACTICAL HEATMAPS & CLUSTERS ---
+let activeClustersCache = [];
+app.get('/api/admin/heatmap-data', async (req, res) => {
+    try {
+        const sosEvents = await SOS.find({ status: { $ne: 'Resolved' } });
+        const responders = await Responder.find({ status: 'Available' });
+        
+        res.json({
+            sosDensity: sosEvents.map(s => [s.location.coordinates[1], s.location.coordinates[0]]),
+            responderCoverage: responders.map(r => [r.location.coordinates[1], r.location.coordinates[0]]),
+            clusters: activeClustersCache
+        });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// BACKGROUND CLUSTER DETECTOR INTERVAL (Every 15s)
+setInterval(async () => {
+    try {
+        const tenMinsAgo = new Date(Date.now() - 10 * 60000);
+        const recentSOS = await SOS.find({ timestamp: { $gte: tenMinsAgo }, status: { $ne: 'Resolved' } });
+        
+        // Simple clustering: checking pairwise distances
+        // (For production, implement DBSCAN or specialized geohashing, using basic grouping for the prompt)
+        const clusters = [];
+        const processed = new Set();
+        
+        for (let i = 0; i < recentSOS.length; i++) {
+            if (processed.has(recentSOS[i]._id.toString())) continue;
+            
+            const clusterGroup = [recentSOS[i]];
+            processed.add(recentSOS[i]._id.toString());
+            
+            for (let j = i + 1; j < recentSOS.length; j++) {
+                if (processed.has(recentSOS[j]._id.toString())) continue;
+                
+                // Haversine distance simplification over small ranges
+                const a = recentSOS[i].location.coordinates;
+                const b = recentSOS[j].location.coordinates;
+                // Roughly 1 degree = 111km. 200m = 0.0018 degrees.
+                const dist = Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
+                
+                if (dist < 0.0018) {
+                    clusterGroup.push(recentSOS[j]);
+                    processed.add(recentSOS[j]._id.toString());
+                }
+            }
+            
+            if (clusterGroup.length >= 5) {
+                // Determine center point naturally
+                const avgLon = clusterGroup.reduce((sum, s) => sum + s.location.coordinates[0], 0) / clusterGroup.length;
+                const avgLat = clusterGroup.reduce((sum, s) => sum + s.location.coordinates[1], 0) / clusterGroup.length;
+                
+                const clusterPayload = {
+                    center: [avgLat, avgLon],
+                    count: clusterGroup.length,
+                    radius: 200, // Fixed physical radius mapping
+                    id: `cluster-${Date.now()}`
+                };
+                clusters.push(clusterPayload);
+                io.emit("disasterCluster", clusterPayload);
+            }
+        }
+        activeClustersCache = clusters;
+    } catch (err) { console.error("Cluster Engine error", err); }
+}, 15000);
 
 // 6b. Get Assigned Responder for Survivor
 app.get('/api/sos/assigned/:survivorId', async (req, res) => {
@@ -410,6 +696,23 @@ app.patch('/api/responders/:id/location', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// 14b. Synchronized Location Update (Rescuers + Survivors)
+app.post('/api/location/update', async (req, res) => {
+    try {
+        const { userId, latitude, longitude, isResponder } = req.body;
+        if (isResponder) {
+            await Responder.findByIdAndUpdate(userId, {
+                location: { type: 'Point', coordinates: [parseFloat(longitude), parseFloat(latitude)] },
+                lastUpdated: new Date()
+            });
+            io.emit('units-update', await Responder.find());
+        }
+        const locationData = { userId, latitude, longitude, isResponder };
+        io.emit('locationUpdate', locationData);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // 15. Supply Cargo Operations
 app.get('/api/supply', async (req, res) => {
     try {
@@ -461,6 +764,7 @@ app.post('/api/sos/confirm-delivery', async (req, res) => {
         await Supply.updateMany({ victimId: sosId }, { status: 'Delivered' });
 
         io.emit('rescue-complete', { sosId, responderId, sos });
+        io.emit('statusUpdate', sos);
         io.emit('units-update', await Responder.find());
         
         res.json({ success: true, message: 'Rescue Handshake Verified.' });

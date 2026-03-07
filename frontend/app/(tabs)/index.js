@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import axios from 'axios';
@@ -52,10 +52,29 @@ export default function SOSMessageScreen() {
         location: extLocation
       });
 
+      // E2E Compliance: Also post explicitly to the core SOS dispatch endpoint
+      const sosPayload = {
+        survivorId: survivorIdentity.survivorId,
+        phone: survivorIdentity.survivorId,
+        latitude: extLocation.coordinates[1],
+        longitude: extLocation.coordinates[0],
+        category: "Medical",
+        emergencyType: "Medical",
+        name: survivorIdentity.name || "Unknown Citizen",
+        email: "N/A",
+        heartRate: 80,
+        timestamp: new Date().toISOString()
+      };
+      console.log('[Survivor] Sending SOS payload:', JSON.stringify(sosPayload));
+      const sosRes = await axios.post(`${API_URL}/sos`, sosPayload);
+      console.log('[Survivor] SOS response:', sosRes.status, sosRes.data?.success);
+
       setMessage('');
       fetchMessages(survivorIdentity.survivorId);
+      Alert.alert("SOS Sent", "Message successfully delivered to the backend network.");
     } catch (err) {
-      alert('Failed to transmit message.');
+      console.error('[Survivor] SOS transmission error:', err.message);
+      Alert.alert('Network Request Failed', `Attempted to reach: ${API_URL}/sos\n\nError: ${err.message}\n\nPlease check if your phone is on the same WiFi network as your PC.`);
     } finally {
       setLoading(false);
     }

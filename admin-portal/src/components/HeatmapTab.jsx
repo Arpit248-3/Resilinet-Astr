@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { GoogleMap, useLoadScript, HeatmapLayer } from '@react-google-maps/api';
 import { Layers, Calendar, Loader, AlertCircle } from 'lucide-react';
+import { API_BASE } from '../constants';
 
 // Require the "visualization" library for the HeatmapLayer
 const libraries = ['visualization'];
@@ -52,14 +53,22 @@ const HeatmapTab = () => {
     setLoading(true);
     setErrorMsg('');
     try {
-      const response = await axios.get(`http://localhost:5000/api/admin/heatmap-data`, {
+      const response = await axios.get(`${API_BASE}/api/admin/heatmap-data`, {
         params: {
           type: activeLayer,
           startDate: dateRange.start,
           endDate: dateRange.end
         }
       });
-      setHeatmapData(response.data);
+      let layerData = [];
+      if (activeLayer === 'sos') {
+          layerData = response.data.sosDensity.map(c => ({ lat: c[0], lng: c[1], weight: 1 }));
+      } else if (activeLayer === 'resources') {
+          layerData = response.data.responderCoverage.map(c => ({ lat: c[0], lng: c[1], weight: 1 }));
+      } else if (activeLayer === 'clusters') {
+          layerData = response.data.clusters.map(c => ({ lat: c.center[0], lng: c.center[1], weight: c.count }));
+      }
+      setHeatmapData(layerData);
     } catch (err) {
       console.error("Heatmap API failed to fetch real data:", err);
       setErrorMsg('Failed to load spatial data.');
@@ -118,7 +127,7 @@ const HeatmapTab = () => {
           <Layers size={18} color="#00f2ff" />
           <span style={{ fontSize: '12px', fontWeight: 'bold', letterSpacing: '1px', marginRight: '10px' }}>LAYER:</span>
 
-          {['sos', 'resources'].map(type => (
+          {['sos', 'resources', 'clusters'].map(type => (
             <button
               key={type}
               onClick={() => setActiveLayer(type)}
@@ -135,7 +144,7 @@ const HeatmapTab = () => {
                 textTransform: 'uppercase'
               }}
             >
-              {type === 'sos' ? 'SOS Urgency' : 'Resource Distribution'}
+              {type === 'sos' ? 'SOS Urgency' : type === 'resources' ? 'Resource Distribution' : 'Disaster Clusters'}
             </button>
           ))}
         </div>

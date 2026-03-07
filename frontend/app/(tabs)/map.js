@@ -41,6 +41,7 @@ export default function MapTab() {
 
   useEffect(() => {
     let interval;
+    let telemetryInterval;
     let socket;
 
     (async () => {
@@ -83,10 +84,27 @@ export default function MapTab() {
       interval = setInterval(() => {
         fetchMapData(survivorId);
       }, 180000);
+
+      // LIVE Telemetry Location Emits (E2E Integration)
+      telemetryInterval = setInterval(async () => {
+        try {
+          const liveLoc = await Location.getCurrentPositionAsync({});
+          await axios.post(`${API_URL}/location/update`, {
+            userId: survivorId || "Anonymous",
+            latitude: liveLoc.coords.latitude,
+            longitude: liveLoc.coords.longitude,
+            isResponder: false
+          });
+        } catch (e) {
+          // Silent catch for telemetry
+        }
+      }, 15000); // 15 seconds sync
+
     })();
 
     return () => {
       if (interval) clearInterval(interval);
+      if (telemetryInterval) clearInterval(telemetryInterval);
       if (socket) socket.disconnect();
     };
   }, []);

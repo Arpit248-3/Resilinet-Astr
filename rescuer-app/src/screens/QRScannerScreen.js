@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
 import axios from 'axios';
-import { API_URL } from '../../App';
+import { API_URL } from '../config/api';
 
 export default function QRScannerScreen({ responderId, missionId, navigate }) {
   const [hasPermission, setHasPermission] = useState(null);

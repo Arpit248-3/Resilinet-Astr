@@ -3,6 +3,8 @@ import { StyleSheet, View, Switch, Text } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps'; // Circle is now used below
 import * as Location from 'expo-location';
 
+import { API_URL } from '@/constants/api';
+
 // IMPORTANT: Ensure you have created frontend/data/safeZones.json
 const SAFE_ZONES = require('../data/safeZones.json'); 
 
@@ -29,7 +31,7 @@ export default function StatusMap() {
   useEffect(() => {
     if (isVolunteer) {
       // Connects to your backend IP
-      fetch('http://127.0.0.1:5000/api/alerts')
+      fetch(`${API_URL}/alerts`)
         .then(res => res.json())
         .then(data => setVictimLocations(data))
         .catch(() => console.log("Backend Offline"));

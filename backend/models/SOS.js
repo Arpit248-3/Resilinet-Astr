@@ -8,9 +8,7 @@ const mongoose = require('mongoose');
 const SOSSchema = new mongoose.Schema({
     survivorId: {
         type: String,
-        required: true,
-        unique: true,
-        index: true
+        required: true
     },
     name: { 
         type: String, 
@@ -27,7 +25,7 @@ const SOSSchema = new mongoose.Schema({
     // Expanded categories to match PriorityEngine.js
     category: { 
         type: String, 
-        enum: ['FIRE', 'MEDICAL', 'POLICE', 'ACCIDENT', 'General'], 
+        enum: ['FIRE', 'MEDICAL', 'POLICE', 'ACCIDENT', 'FLOOD', 'EARTHQUAKE', 'RESCUE', 'GENERAL', 'SMS_ALERT', 'General'], 
         default: 'General' 
     },
     priority: { 
@@ -50,6 +48,16 @@ const SOSSchema = new mongoose.Schema({
         type: String, 
         default: 'Local' 
     },
+    // Survivor message text for NLP triage
+    message: {
+        type: String,
+        default: ''
+    },
+    status: { 
+        type: String, 
+        enum: ['Active', 'Dispatched', 'Handed Over', 'rescue_assigned', 'Resolved'], 
+        default: 'Active' 
+    },
     location: {
         type: { 
             type: String, 
@@ -60,12 +68,6 @@ const SOSSchema = new mongoose.Schema({
             type: [Number], // [longitude, latitude]
             required: true 
         }
-    },
-    // Handed Over status used when dispatching to External Sectors
-    status: { 
-        type: String, 
-        enum: ['Active', 'Dispatched', 'Handed Over', 'Resolved'], 
-        default: 'Active' 
     },
     assignedResponder: { 
         type: mongoose.Schema.Types.ObjectId, 

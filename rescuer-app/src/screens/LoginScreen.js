@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import axios from 'axios';
-import { API_URL } from '../../App';
+import { API_URL } from '../config/api';
 
 export default function LoginScreen({ setResponderId, navigate }) {
   const [name, setName] = useState('');

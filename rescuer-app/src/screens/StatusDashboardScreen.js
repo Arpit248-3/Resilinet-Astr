@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import axios from 'axios';
-import { API_URL } from '../../App';
+import { API_URL } from '../config/api';
 
 export default function StatusDashboardScreen({ responderId }) {
   const [responder, setResponder] = useState(null);

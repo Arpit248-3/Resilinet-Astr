@@ -8,8 +8,7 @@ const mongoose = require('mongoose');
 const SOSMessageSchema = new mongoose.Schema({
     survivorId: {
         type: String,
-        required: true,
-        index: true
+        required: true
     },
     username: {
         type: String,

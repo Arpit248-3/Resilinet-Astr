@@ -3,6 +3,7 @@ import {
   Clock, MapPin, AudioLines, AlertTriangle, 
   CheckCircle2, Share2, ExternalLink, ShieldAlert 
 } from 'lucide-react';
+import { API_BASE } from '../constants';
 
 const IncidentTable = ({ incidents = [], onResolve, onHandover }) => {
   
@@ -73,7 +74,7 @@ const IncidentTable = ({ incidents = [], onResolve, onHandover }) => {
                   <td style={tdStyle}>
                     {incident.audioPath ? (
                       <audio controls style={audioStyle}>
-                        <source src={`http://localhost:5000/${incident.audioPath}`} type="audio/mpeg" />
+                        <source src={`${API_BASE}/${incident.audioPath}`} type="audio/mpeg" />
                       </audio>
                     ) : (
                       <span style={{ color: '#444', fontSize: '11px' }}>NO_AUDIO_FEED</span>

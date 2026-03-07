@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import axios from 'axios';
-import { API_URL } from '../../App';
+import { API_URL } from '../config/api';
 
 export default function ActiveMissionScreen({ missionId, navigate }) {
   const [mission, setMission] = useState(null);
@@ -23,7 +23,7 @@ export default function ActiveMissionScreen({ missionId, navigate }) {
     if (!mission || !mission.location) return;
     const lat = mission.location.coordinates[1];
     const lng = mission.location.coordinates[0];
-    const url = `http://maps.google.com/maps?daddr=${lat},${lng}`;
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
     Linking.openURL(url);
   };
 
@@ -67,7 +67,7 @@ export default function ActiveMissionScreen({ missionId, navigate }) {
         <Text style={styles.navBtnText}>LAUNCH GPS NAVIGATION</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.qrBtn} onPress={() => navigate('Scanner')}>
+      <TouchableOpacity style={styles.qrBtn} onPress={() => navigate('Generator')}>
         <Text style={styles.qrBtnText}>INITIATE QR HANDSHAKE</Text>
       </TouchableOpacity>
     </View>

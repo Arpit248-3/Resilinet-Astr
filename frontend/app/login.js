@@ -36,10 +36,12 @@ export default function LoginScreen() {
     
     setLoading(true);
     try {
+      console.log('[Survivor] Connecting to:', `${API_URL}/survivor/login`);
       const res = await axios.post(`${API_URL}/survivor/login`, {
         phone,
         name: name.trim() || 'Unknown Survivor'
       });
+      console.log('[Survivor] Login success, survivorId:', res.data.survivorId);
       
       const { survivorId } = res.data;
       await AsyncStorage.setItem('survivorId', survivorId);
@@ -48,7 +50,7 @@ export default function LoginScreen() {
       
       router.replace('/(tabs)');
     } catch (err) {
-      console.error(err);
+      console.error('[Survivor] Login failed:', err.message);
       alert('Network Error. Could not connect to Resilinet Command Center.');
     } finally {
       setLoading(false);

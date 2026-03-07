@@ -606,6 +606,22 @@ const SurvivorMessagesView = ({ alerts }) => {
               </div>
             )}
 
+            {/* Rescue Timeline */}
+            <div style={{ margin: '0 24px 16px', padding: '15px', borderRadius: '8px', background: 'rgba(20,22,28,0.8)', border: '1px solid #333' }}>
+              <div style={{ fontSize: '11px', color: '#888', fontWeight: 'bold', marginBottom: '12px', letterSpacing: '1px' }}>RESCUE TIMELINE</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ color: '#00f2ff', fontSize: '12px', fontWeight: 'bold' }}>🟢 SOS Received</div>
+                <div style={{ flex: 1, height: '2px', background: selectedSurvivor.status !== 'Active' ? '#00f2ff' : '#333', margin: '0 10px' }} />
+                <div style={{ color: selectedSurvivor.status !== 'Active' ? '#00ff9f' : '#555', fontSize: '12px', fontWeight: 'bold' }}>
+                  {selectedSurvivor.status !== 'Active' ? '🟢 Assigned' : '⚪ Pending Unit'}
+                </div>
+                <div style={{ flex: 1, height: '2px', background: selectedSurvivor.status === 'Resolved' ? '#00f2ff' : '#333', margin: '0 10px' }} />
+                <div style={{ color: selectedSurvivor.status === 'Resolved' ? '#00f2ff' : '#555', fontSize: '12px', fontWeight: 'bold' }}>
+                  {selectedSurvivor.status === 'Resolved' ? '🟢 Delivered' : '⚪ En Route'}
+                </div>
+              </div>
+            </div>
+
             {/* Message Timeline */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '8px 24px 24px' }}>
               {loading ? (
@@ -867,13 +883,55 @@ const Dashboard = ({ onLogout }) => {
     
     const socket = io(SOCKET_URL);
     socket.on('new-sos', (sos) => {
-      setAlerts(prev => [sos, ...prev]);
-      addLog(`🚨 INCOMING: ${sos.category.toUpperCase()} reported by ${sos.name}.`);
+      setAlerts(prev => {
+        if (!prev.find(a => a._id === sos._id)) return [sos, ...prev];
+        return prev;
+      });
+      addLog(`🚨 INCOMING: ${sos.category?.toUpperCase() || 'EMERGENCY'} reported by ${sos.name || 'Unknown'}.`);
     });
+
+    // E2E Standard Sockets
+    socket.on('newSOS', (sos) => {
+      setAlerts(prev => {
+        if (!prev.find(a => a._id === sos._id)) return [sos, ...prev];
+        return prev;
+      });
+      addLog(`🚨 INCOMING SOS: Emergency reported via Survivor Network.`);
+    });
+    
+    // Intelligent Dispatch: Real-time Clusters
+    socket.on('disasterCluster', (cluster) => {
+      setClusters(prev => {
+        if (!prev.find(c => c.id === cluster.id)) return [...prev, cluster];
+        return prev;
+      });
+      addLog(`⚠️ CRITICAL: Disaster Cluster detected at [${cluster.center[0].toFixed(4)}, ${cluster.center[1].toFixed(4)}] (${cluster.count} alerts)`);
+      setShowToast(`⚠️ NEW DISASTER CLUSTER DETECTED`);
+      setTimeout(() => setShowToast(null), 5000);
+    });
+    
+    socket.on('locationUpdate', (locData) => {
+      // Support legacy isResponder mapping and new Intelligent Dispatch type schema
+      if (locData.isResponder || locData.type === 'rescuer') {
+         setResponders(prev => prev.map(r => r._id === locData.userId ? { ...r, location: { ...r.location, coordinates: [locData.longitude, locData.latitude] } } : r));
+      } else {
+         setAlerts(prev => prev.map(a => a.survivorId === locData.userId && a.status !== 'Resolved' ? { ...a, location: { ...a.location, coordinates: [locData.longitude, locData.latitude] } } : a));
+      }
+    });
+
+    socket.on('statusUpdate', (sos) => {
+      setAlerts(prev => prev.map(a => a._id === sos._id ? sos : a));
+      if (sos.status === 'rescue_assigned') {
+        addLog(`⚡ DISPATCH CONFIRMED: Mutual Handshake executed for SOS ${sos._id.substring(0,6)}.`);
+        setShowToast(`RESCUE OPERATION INITIATED: ${sos.name}`);
+        setTimeout(() => setShowToast(null), 4000);
+      }
+    });
+
     socket.on('units-update', (units) => setResponders(units));
     socket.on('rescue-complete', (data) => {
       setShowToast(`QR RESCUE SECURED: Mission ${data.sosId}`);
-      addLog(`✅ SECURED: Rescuer ${data.responderId} resolved Mission ${data.sosId}.`);
+      addLog(`✅ SECURED: Rescuer resolved Mission ${data.sosId}.`);
       setTimeout(() => setShowToast(null), 5000);
       fetchTacticalData();
     });
