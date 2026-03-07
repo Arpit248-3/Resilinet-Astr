@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ResiliNet | Field Responder</title>
+    <script src="config.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: sans-serif; margin: 0; background: #f0f2f5; }
+        .header { background: #1d3557; color: white; padding: 15px; }
+        .task-card { background: white; margin: 10px; padding: 15px; border-radius: 8px; border-left: 10px solid #ccc; }
+        .prio-3 { border-left-color: #e63946; } /* Medical */
+        .prio-2 { border-left-color: #ffa500; } /* Fire */
+        .dispatch-btn { background: #1d3557; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="header"><h2>🚑 Field Response Unit</h2></div>
+    <div id="task-container"></div>
+    <script>
+        async function loadTasks() {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            const container = document.getElementById('task-container');
+            container.innerHTML = "";
+            data.forEach(alert => {
+                const card = document.createElement('div');
+                card.className = `task-card prio-${alert.priority}`;
+                card.innerHTML = `<b>${alert.userId} [${alert.category}]</b><p>📍 ${alert.location.latitude.toFixed(4)}, ${alert.location.longitude.toFixed(4)}</p>
+                <button class="dispatch-btn" onclick="alert('Navigating...')">RESPOND NOW</button>`;
+                container.appendChild(card);
+            });
+        }
+        setInterval(loadTasks, 5000);
+        loadTasks();
+    </script>
+</body>
+</html>

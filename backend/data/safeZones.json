@@ -1,0 +1,23 @@
+[
+  {
+    "id": "sz1",
+    "name": "Vijay Nagar Help Center",
+    "latitude": 22.7533,
+    "longitude": 75.8937,
+    "type": "Hospital"
+  },
+  {
+    "id": "sz2",
+    "name": "Rajwada Safety Zone",
+    "latitude": 22.7195,
+    "longitude": 75.8577,
+    "type": "Police"
+  },
+  {
+    "id": "sz3",
+    "name": "Bhawarkua Relief Camp",
+    "latitude": 22.6916,
+    "longitude": 75.8676,
+    "type": "Shelter"
+  }
+]

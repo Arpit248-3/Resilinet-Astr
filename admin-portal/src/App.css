@@ -1,0 +1,965 @@
+/* RESILINET COMMAND CENTER - HYPER-AESTHETIC V4.0 
+  Theme: Deep Space / Neon Glass / Tactical Precision
+  Author: ResiliNet UI Engineering
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;700&display=swap');
+
+:root {
+  /* Core Palette */
+  --bg-core: #02040a;
+  --bg-deep: #050810;
+  --panel-glass: rgba(10, 15, 28, 0.82);
+  --border-glass: rgba(0, 242, 255, 0.18);
+  
+  /* Tactical Accents */
+  --accent: #00f2ff;
+  --accent-glow: rgba(0, 242, 255, 0.45);
+  --critical: #ff3e3e;
+  --critical-glow: rgba(255, 62, 62, 0.4);
+  --success: #00ff9d;
+  --warning: #ffb800;
+  
+  /* Text & Fonts */
+  --text-main: #e2e8f0;
+  --text-dim: #94a3b8;
+  --font-main: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-tactical: 'Orbitron', sans-serif;
+  
+  /* Dimensions */
+  --sidebar-width: 290px;
+  --header-height: 65px;
+}
+
+/* --- 1. GLOBAL RESET & FOUNDATION --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body, html, #root {
+  margin:0;
+  padding:0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-core);
+  color: var(--text-main);
+  font-family: var(--font-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbars - Premium Minimalist */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+::-webkit-scrollbar-thumb { 
+  background: var(--border-glass); 
+  border-radius: 10px; 
+  transition: background 0.3s;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* --- 2. LAYOUT ARCHITECTURE --- */
+.dashboard-root {
+  display: flex;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at 50% 50%, #0a101f 0%, #02040a 100%);
+  position: relative;
+}
+
+/* Sidebar Styling - Tactical Command */
+.tactical-sidebar {
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: var(--panel-glass);
+  backdrop-filter: blur(25px);
+  border-right: 1px solid var(--border-glass);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  overflow-y: auto ;
+  overflow-x:hidden;
+  scrollbar-width: none;;
+  transition: all 0.4s ease;
+}
+
+.sidebar-top { padding: 2rem 1.5rem; }
+
+.system-branding {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 2.5rem;
+}
+
+.brand-pulse {
+  color: var(--accent);
+  filter: drop-shadow(0 0 10px var(--accent-glow));
+}
+
+.system-branding h1 {
+  font-family: var(--font-tactical);
+  font-size: 1.3rem;
+  letter-spacing: 3px;
+  font-weight: 700;
+  background: linear-gradient(to right, #fff, var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Navigation - Modern Glass Buttons */
+.tactical-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 1rem;
+}
+
+.tactical-nav button {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-dim);
+  padding: 14px 18px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.tactical-nav button:hover {
+  color: var(--accent);
+  background: rgba(0, 242, 255, 0.05);
+  border-color: var(--border-glass);
+  transform: translateX(5px);
+}
+
+.tactical-nav button.active {
+  background: linear-gradient(90deg, rgba(0, 242, 255, 0.15) 0%, rgba(0, 242, 255, 0.02) 100%);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: -5px 0 20px rgba(0, 242, 255, 0.1);
+}
+
+/* Sidebar Bottom Controls - MCI & LOGOUT */
+.sidebar-bottom {
+  margin-top: auto;
+  padding: 1.5rem;
+  border-top: 1px solid var(--border-glass);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.mci-container { margin-bottom: 1rem; }
+
+.mci-toggle-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  font-family: var(--font-tactical);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.4s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.mci-toggle-btn.inactive {
+  background: transparent;
+  border: 1px solid var(--text-dim);
+  color: var(--text-dim);
+}
+
+.mci-toggle-btn.active {
+  background: rgba(255, 62, 62, 0.15);
+  border: 1px solid var(--critical);
+  color: var(--critical);
+  box-shadow: 0 0 20px var(--critical-glow);
+  animation: danger-pulse-border 2s infinite;
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ef4444;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: 0.3s;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+}
+
+/* --- 3. MAIN VIEWPORT & HEADER --- */
+.main-viewport {
+  flex: 1;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 10;
+}
+
+.global-status-bar {
+  height: var(--header-height);
+  background: rgba(2, 4, 10, 0.4);
+  backdrop-filter: blur(15px);
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+}
+
+.status-left { display: flex; gap: 1.5rem; }
+
+.stat-capsule {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.stat-capsule .label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-right: 10px;
+  letter-spacing: 1px;
+}
+
+.stat-capsule .value {
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+/* --- 4. MAP POSITIONING & MARKER ANCHOR FIX --- */
+.operations-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.map-frame {
+  flex: 1;
+  position: relative;
+  background: #000;
+}
+
+/* IMPORTANT: Fixes Danger Icon Drift */
+.leaflet-marker-icon {
+  filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
+}
+
+/* Ensuring center alignment for custom markers */
+.pulse-marker-sos {
+  animation: marker-pulse-glow 2s infinite ease-in-out;
+  transform-origin: bottom center;
+}
+
+@keyframes marker-pulse-glow {
+  0% { transform: scale(1); filter: drop-shadow(0 0 5px var(--critical)); }
+  50% { transform: scale(1.15); filter: drop-shadow(0 0 15px var(--critical)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 5px var(--critical)); }
+}
+
+/* --- 5. FORMATTED TRIAGE FEED --- */
+.triage-feed {
+  width: 380px;
+  background: rgba(5, 8, 16, 0.6);
+  backdrop-filter: blur(10px);
+  border-right: 1px solid var(--border-glass);
+  display: flex;
+  flex-direction: column;
+}
+
+.feed-header {
+  display: flex;
+  border-bottom: 1px solid var(--border-glass);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.feed-header button {
+  flex: 1;
+  padding: 18px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.feed-header button.active {
+  color: var(--accent);
+  background: rgba(0, 242, 255, 0.08);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
+.feed-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.2) 100%);
+}
+
+/* High-End Triage Cards */
+.triage-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-glass);
+  border-radius: 14px;
+  padding: 1.2rem;
+  margin-bottom: 1.2rem;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+}
+
+.triage-card::after {
+  content: "";
+  position: absolute;
+  top: 0; right: 0; width: 40px; height: 40px;
+  background: linear-gradient(45deg, transparent 50%, rgba(255,255,255,0.03) 50%);
+}
+
+.triage-card:hover {
+  transform: scale(1.02);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--accent);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.triage-card.critical { border-left: 5px solid var(--critical); }
+.triage-card.high { border-left: 5px solid var(--warning); }
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.card-top .name { 
+  font-weight: 700; 
+  font-size: 1rem; 
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.card-top .category { 
+  font-size: 0.6rem; 
+  padding: 4px 10px; 
+  background: rgba(255,255,255,0.1); 
+  border-radius: 20px; 
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--text-dim);
+}
+
+.biometrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 15px 0;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+}
+
+.bio-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.bio-stat svg { width: 14px; height: 14px; }
+
+/* --- 6. AI & ANALYTICS VIEWS --- */
+.analytics-view-container {
+  flex: 1;
+  padding: 2.5rem;
+  overflow-y: auto;
+  background: radial-gradient(circle at top right, rgba(0, 242, 255, 0.03), transparent);
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+}
+
+.analytics-card {
+  background: var(--panel-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: 20px;
+  padding: 2rem;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+}
+
+/* AI Terminal Look */
+.terminal-column {
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid var(--border-glass);
+  border-radius: 15px;
+  overflow: hidden;
+  height: 550px;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+}
+
+.terminal-header {
+  padding: 12px 20px;
+  background: #0a0e14;
+  border-bottom: 1px solid #1a1f26;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.terminal-header span {
+  font-family: var(--font-tactical);
+  font-size: 0.7rem;
+  color: var(--accent);
+  letter-spacing: 2px;
+}
+
+.terminal-body {
+  flex: 1;
+  padding: 1.2rem;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--success);
+  line-height: 1.6;
+}
+
+.log-line { 
+  margin-bottom: 8px; 
+  border-left: 2px solid rgba(0, 255, 157, 0.15); 
+  padding-left: 12px;
+  animation: log-fade-in 0.3s ease-out;
+}
+
+@keyframes log-fade-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.log-ts { color: var(--accent); margin-right: 12px; font-weight: 700; opacity: 0.8; }
+
+/* --- 7. DISPATCH & ACTION AREA --- */
+.dispatch-action {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.dispatch-action select {
+  flex: 1;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border-glass);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.75rem;
+  font-family: var(--font-main);
+  outline: none;
+}
+
+.dispatch-btn {
+  background: var(--accent);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #000;
+  font-weight: 700;
+  transition: 0.2s;
+}
+
+.dispatch-btn:hover {
+  background: #fff;
+  box-shadow: 0 0 15px var(--accent);
+}
+
+/* --- 8. ANIMATIONS --- */
+@keyframes heart-beat {
+  0% { transform: scale(1); }
+  15% { transform: scale(1.25); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.15); }
+  60% { transform: scale(1); }
+}
+
+.heart-beat {
+  animation: heart-beat 1s infinite;
+  color: var(--critical);
+}
+
+@keyframes danger-pulse-border {
+  0% { border-color: var(--critical); box-shadow: 0 0 0px var(--critical-glow); }
+  50% { border-color: #fff; box-shadow: 0 0 20px var(--critical-glow); }
+  100% { border-color: var(--critical); box-shadow: 0 0 0px var(--critical-glow); }
+}
+
+/* --- 9. MODALS --- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.handover-modal {
+  background: var(--bg-deep);
+  border: 1px solid var(--accent);
+  width: 480px;
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 0 60px rgba(0, 242, 255, 0.25);
+  animation: modal-slide-up 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modal-slide-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- 10. SYSTEM HEALTH TRAY (Bottom of Viewport) --- */
+.system-health-bar {
+  display: flex;
+  gap: 2rem;
+  padding: 10px 2rem;
+  background: rgba(0,0,0,0.3);
+  border-top: 1px solid var(--border-glass);
+}
+
+.health-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+.health-item .indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+}
+/* --- LOGIN PORTAL: TACTICAL TERMINAL --- */
+
+/* 1. Main Container with Grid Overlay */
+.login-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, #0a101f 0%, #02040a 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(var(--border-glass) 1px, transparent 1px),
+                    linear-gradient(90deg, var(--border-glass) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+/* 2. Glassmorphic Card */
+.login-glass-card {
+  width: 360px;
+  padding: 40px;
+  background: rgba(10, 15, 28, 0.8);
+  backdrop-filter: blur(25px);
+  border: 1px solid var(--border-glass);
+  border-radius: 24px;
+  text-align: center;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(0, 242, 255, 0.05);
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+/* 3. PIN Display Dots */
+.pin-display {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.pin-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--border-glass);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.pin-dot.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 15px var(--accent-glow);
+  transform: scale(1.3);
+}
+
+/* 4. Tactical Keypad Grid */
+.keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.keypad-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: #fff;
+  padding: 18px;
+  border-radius: 12px;
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.keypad-btn:hover:not(:disabled) {
+  background: rgba(0, 242, 255, 0.1);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
+}
+
+.keypad-btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.keypad-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 5. Shimmer/Neon Text */
+.shimmer-text {
+  font-family: var(--font-tactical);
+  background: linear-gradient(90deg, #fff 0%, var(--accent) 50%, #fff 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 3s linear infinite;
+  letter-spacing: 2px;
+}
+
+/* 6. Animations */
+@keyframes shine {
+  to { background-position: 200% center; }
+}
+
+.error-shake {
+  animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+  border-color: var(--critical) !important;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+/* --- SIDEBAR HUB FORMATTING --- */
+.sidebar-control-hub {
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin: 1rem 0;
+}
+
+/* System Health Tray as "Formatted Tabs" */
+.system-health-tray {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border-glass);
+}
+
+.health-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+}
+
+.health-stat span {
+    font-size: 0.55rem;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.health-stat strong {
+    font-size: 0.65rem;
+    font-family: var(--font-mono);
+    color: #fff;
+}
+
+/* --- TACTICAL MCI BUTTON DESIGN --- */
+.mci-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.mci-icon-box {
+    background: rgba(0, 242, 255, 0.1);
+    padding: 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+}
+
+.mci-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.mci-label {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+}
+
+.mci-value {
+    font-family: var(--font-tactical);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* Active State: Dangerous Red Glow */
+.mci-toggle.active {
+    background: rgba(255, 62, 62, 0.1);
+    border-color: var(--critical);
+    box-shadow: 0 0 20px rgba(255, 62, 62, 0.2);
+}
+
+.mci-toggle.active .mci-icon-box {
+    background: var(--critical);
+    color: #fff;
+    animation: pulse-red 1.5s infinite;
+}
+
+.mci-toggle.active .mci-value {
+    color: var(--critical);
+}
+
+/* Logout Button Spacing & Formatting */
+.sidebar-footer {
+    margin-top: auto;
+    padding: 1.5rem;
+    border-top: 1px solid var(--border-glass);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.logout-btn {
+    width: 100%;
+    margin-top: 1.2rem;
+    background: transparent;
+    border: 1px solid rgba(255, 62, 62, 0.4);
+    color: var(--critical);
+    padding: 12px;
+    border-radius: 8px;
+    font-family: var(--font-tactical);
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.logout-btn:hover {
+    background: var(--critical);
+    color: #fff;
+    box-shadow: 0 0 15px var(--critical-glow);
+}
+
+@keyframes pulse-red {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+/* --- SIDEBAR FOOTER & SCROLL FIX --- */
+.sidebar-footer {
+    margin-top: auto;
+    padding: 2rem 1rem;
+    background: rgba(0, 0, 0, 0.4);
+    border-top: 1px solid var(--border-glass);
+    display: flex;
+    flex-shrink:0;
+    flex-direction: column;
+    max-height: 40%; /* Prevents the footer from pushing everything off-screen */
+}
+.tactical-sidebar::-webkit-scrollbar {
+    width: 4px; /* Very thin scrollbar for Chrome/Edge */
+}
+
+.tactical-sidebar::-webkit-scrollbar-thumb {
+    background: var(--border-glass);
+    border-radius: 10px;
+}
+/* --- THE TERMINAL (LOGS) --- */
+.comm-log-container {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(0, 242, 255, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.log-header {
+    background: rgba(0, 242, 255, 0.05);
+    padding: 8px 12px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(0, 242, 255, 0.1);
+}
+
+.log-scroll {
+    flex: 1;
+    overflow-y: auto; /* ENABLES SCROLLING WITHIN THE LOGS */
+    max-height: 180px;
+    padding: 10px;
+    font-family: var(--font-mono);
+}
+
+/* Individual Log Item Styling */
+.log-item {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    border-left: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.log-item:hover {
+    border-left: 2px solid var(--accent);
+    padding-left: 5px;
+    background: rgba(0, 242, 255, 0.03);
+}
+
+/* Formatted Timestamp */
+.log-item .ts {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 0.65rem;
+    background: rgba(0, 242, 255, 0.1);
+    padding: 2px 4px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+/* Log Message Text */
+.log-item .msg-text {
+    color: var(--text-main);
+    opacity: 0.9;
+}
+
+/* --- LOGOUT BUTTON RE-ALIGNMENT --- */
+.logout-btn {
+    margin-top: 15px;
+    padding: 10px;
+    background: rgba(255, 62, 62, 0.05);
+    border: 1px solid rgba(255, 62, 62, 0.3);
+    color: #ff3e3e;
+    border-radius: 6px;
+    font-family: var(--font-tactical);
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.logout-btn:hover {
+    background: #ff3e3e;
+    color: #fff;
+    box-shadow: 0 0 15px rgba(255, 62, 62, 0.3);
+}

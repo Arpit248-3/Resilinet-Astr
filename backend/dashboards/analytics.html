@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ResiliNet | Analytics</title>
+    <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 40px; background: #f9f9f9; }
+        .chart-container { width: 80%; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <h2>📊 Live Incident Analysis</h2>
+        <canvas id="myChart"></canvas>
+    </div>
+    <script>
+        async function loadChart() {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            const ctx = document.getElementById('myChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Medical', 'Fire', 'Security'],
+                    datasets: [{
+                        label: 'Recent Incidents',
+                        data: [
+                            data.filter(a => a.category === 'Medical').length,
+                            data.filter(a => a.category === 'Fire').length,
+                            data.filter(a => a.category === 'Security').length
+                        ],
+                        backgroundColor: ['#e63946', '#f4a261', '#2a9d8f']
+                    }]
+                }
+            });
+        }
+        loadChart();
+    </script>
+</body>
+</html>

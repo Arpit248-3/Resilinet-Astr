@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ResiliNet | Command Center</title>
+    <script src="config.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #map { height: 70vh; width: 100%; border-radius: 10px; }
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #1a1a1a; color: white; }
+        .stats-row { display: flex; gap: 20px; margin-bottom: 20px; }
+        .stat-card { background: #2d2d2d; padding: 15px; border-radius: 10px; flex: 1; text-align: center; border-top: 4px solid #e63946; }
+        .alert-panel { background: #2d2d2d; padding: 15px; border-radius: 10px; margin-top: 20px; height: 200px; overflow-y: auto; }
+        .priority-high { color: #ff4d4d; font-weight: bold; border-left: 4px solid #ff4d4d; padding-left: 10px; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🛰️ Strategic Command Center</h1>
+    <div class="stats-row">
+        <div class="stat-card"><h3>Active SOS</h3><h2 id="total-count">0</h2></div>
+        <div class="stat-card"><h3>Critical</h3><h2 id="high-priority">0</h2></div>
+        <div class="stat-card" style="border-top-color: #457b9d;"><h3>Mode</h3><h2 id="map-mode">Online</h2></div>
+    </div>
+    <div id="map"></div>
+    <div class="alert-panel"><h3>Live Intelligence Feed</h3><div id="alert-list">Scanning...</div></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const isOffline = false; // Set to true to demo Offline capability
+        document.getElementById('map-mode').innerText = isOffline ? "Offline Cache" : "Cloud Sync";
+
+        const map = L.map('map').setView([20.5937, 78.9629], 5);
+        const tileUrl = isOffline ? './tiles/{z}/{x}/{y}.png' : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+        L.tileLayer(tileUrl, { maxZoom: 18 }).addTo(map);
+
+        let markers = L.layerGroup().addTo(map);
+
+        async function fetchCommandData() {
+            try {
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                document.getElementById('total-count').innerText = data.length;
+                document.getElementById('high-priority').innerText = data.filter(a => a.priority === 3).length;
+                markers.clearLayers();
+                const list = document.getElementById('alert-list');
+                list.innerHTML = "";
+                data.forEach(alert => {
+                    let color = alert.priority === 3 ? "#ff0000" : (alert.priority === 2 ? "#ffa500" : "#3498db");
+                    L.circleMarker([alert.location.latitude, alert.location.longitude], { radius: 12, color: color, fillOpacity: 0.6 })
+                     .addTo(markers).bindPopup(`<b>${alert.category}</b> by ${alert.userId}`);
+                    const item = document.createElement('div');
+                    item.className = alert.priority === 3 ? 'priority-high' : '';
+                    item.innerHTML = `[${new Date(alert.timestamp).toLocaleTimeString()}] ${alert.category}: ${alert.userId}`;
+                    list.appendChild(item);
+                });
+            } catch (e) { console.log("Connection lost..."); }
+        }
+        setInterval(fetchCommandData, 5000);
+        fetchCommandData();
+    </script>
+</body>
+</html>
